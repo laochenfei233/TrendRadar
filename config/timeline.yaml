@@ -203,87 +203,78 @@ presets:
 
 
   # ───────────────────────────────────────────────────────────
-  # 3️⃣ office_hours - 办公时间推送
+  # 3️⃣ office_hours - 办公时间推送（周末同频）
   #
-  # 工作日三段式推送，周末增量自由推。
-  # 适合：上班族、企业用户
+  # 工作日和周末都采用三段式推送：早上、中午、晚上各一次。
+  # 适合：希望每天固定时间接收推送的用户
   #
   # 默认（静默期）：推送 ✗ | AI分析 ✗
-  # 到岗速览：推送 ✓ | AI分析 ✓ | 只推一次
-  # 午间热点：推送 ✓ | AI分析 ✗ | 只推一次
-  # 收工汇总：推送 ✓ | AI分析 ✓ | 只推一次
-  # 周末自由：推送 ✓ | AI分析 ✗ | 不限推送次数
+  # 早上推送：推送 ✓ | AI分析 ✓ | 只推一次
+  # 中午推送：推送 ✓ | AI分析 ✗ | 只推一次
+  # 晚上推送：推送 ✓ | AI分析 ✓ | 只推一次
   # ───────────────────────────────────────────────────────────
   office_hours:
-    name: "办公时间"
-    description: "工作日三段式推送（到岗→午间→收工），周末增量自由推送。"
+    name: "办公时间（周末同频）"
+    description: "工作日和周末都采用三段式推送：早上、中午、晚上各一次。"
 
+    # 默认配置 ── 不在任何时间段内时使用
     default:
-      collect: true
-      analyze: false
-      ai_mode: "current"
+      collect: true                # 始终采集数据
+      analyze: false               # 默认不进行 AI 分析
+      ai_mode: "current"           # AI 分析当前榜单
       push: false                  # 默认不推送
-      report_mode: "current"
-      once:
-        analyze: true              # 每个时段只分析一次
-        push: true                 # 每个时段只推送一次
+      report_mode: "current"       # 报告模式为当前在榜新闻
+      once:                        # 限制每个时间段内只执行一次
+        analyze: true              # 每个时间段内只分析一次
+        push: true                 # 每个时间段内只推送一次
 
+    # 时间段定义
     periods:
       morning_briefing:
-        name: "到岗速览"
+        name: "早上推送"
         start: "09:00"
         end: "11:00"
-        analyze: true              # AI 分析当前热点
+        analyze: true              # 执行 AI 分析
         ai_mode: "current"         # AI 分析当前榜单
-        push: true                 # 到岗后看当前热点
-        report_mode: "current"     # 当前在榜的新闻
-        # once 继承 default（analyze: true, push: true）→ 只推/分析一次
+        push: true                 # 开启推送
+        report_mode: "current"     # 推送当前在榜的新闻
+        # once 继承 default（push: true）→ 窗口内只推送一次
 
       noon_update:
-        name: "午间热点"
+        name: "中午推送"
         start: "13:00"
-        end: "15:00"              
-        push: true                 # 午间推送当前在榜热点
-        report_mode: "current"     # 当前在榜的新闻
-        # analyze 继承 default: false → 午间不做 AI 分析，节省 API
-        # once 继承 default（push: true）→ 只推一次
+        end: "15:00"
+        push: true                 # 开启推送
+        report_mode: "current"     # 推送当前在榜的新闻
+        # analyze 继承 default: false → 中午不做 AI 分析，节省 API
+        # once 继承 default（push: true）→ 窗口内只推送一次
 
       closing_summary:
-        name: "收工汇总"
+        name: "晚上推送"
         start: "17:00"
         end: "19:00"
-        analyze: true              # AI 做全天汇总分析
-        ai_mode: "daily"           # AI 也分析全天内容
-        push: true                 # 下班前推送当日完整汇总
-        report_mode: "daily"       # 当日全部新闻汇总
-        # once 继承 default（analyze: true, push: true）→ 只推/分析一次
+        analyze: true              # 执行 AI 分析
+        ai_mode: "daily"           # AI 分析全天内容
+        push: true                 # 开启推送
+        report_mode: "daily"       # 推送当日全部新闻汇总
+        # once 继承 default（push: true）→ 窗口内只推送一次
 
-      weekend_free:
-        name: "周末自由"
-        start: "08:00"
-        end: "23:00"
-        ai_mode: "current"         # AI 分析当前榜单
-        push: true                 # 有新增就推送
-        report_mode: "incremental" # 增量模式：有新增才推，没有就安静
-        once:
-          analyze: false           # 不限制分析次数
-          push: false              # 不限制推送次数
-
-    # 工作日使用三段式推送；周末使用增量自由模式
+    # 日计划 ── 把时间段组装成一天的安排
     day_plans:
       workday:
         periods: ["morning_briefing", "noon_update", "closing_summary"]
       weekend:
-        periods: ["weekend_free"]  # 周末：有新增就推，不打扰睡眠
+        periods: ["morning_briefing", "noon_update", "closing_summary"]  # 周末也用同样的时间段
 
+    # 周映射 ── 每天用哪个日计划（1=周一 ... 7=周日）
     week_map:
       1: "workday"                 # 周一 → 工作日计划
-      2: "workday"
-      3: "workday"
-      4: "workday"
-      5: "workday"
-      6: "weekend"                 # 周六 → 周末计划
-      7: "weekend"                 # 周日 → 周末计划
+      2: "workday"                 # 周二
+      3: "workday"                 # 周三
+      4: "workday"                 # 周四
+      5: "workday"                 # 周五
+      6: "weekend"                 # 周六 → 周末计划（现在也是三段式）
+      7: "weekend"                 # 周日 → 周末计划（现在也是三段式）
 
 
   # ───────────────────────────────────────────────────────────
@@ -415,7 +406,6 @@ custom:
       analyze: true                # 该时间段内只分析一次（省 API）
       push: true                   # 该时间段内只推送一次（省打扰）
 
-
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # 第 1 步：定义积木块（时间段）
   #
@@ -464,7 +454,6 @@ custom:
       report_mode: "daily"         # 当日全部新闻汇总
       # once 继承 default（analyze: true, push: true）→ 只分析/推送一次
 
-
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # 第 2 步：把积木块拼成日计划
   #
@@ -477,7 +466,6 @@ custom:
       periods: ["deep_quiet", "weekday_morning", "evening_summary"]
     weekend:                       # 周末计划（用 weekend_morning 替换 weekday_morning）
       periods: ["deep_quiet", "weekend_morning", "evening_summary"]
-
 
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # 第 3 步：指定每天用哪个日计划
@@ -492,7 +480,6 @@ custom:
     5: "workday"                   # 周五
     6: "weekend"                   # 周六 → 周末计划
     7: "weekend"                   # 周日
-
 
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   # 冲突策略（一般不用改）
